@@ -1,0 +1,50 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.egg-info/
+*.egg
+*.manifest
+*.spec
+
+# ---- Virtual Environment ----
+.venv/
+venv/
+env/
+ENV/
+
+# ---- Environment Variables ----
+.env
+*.env
+
+# ---- Logs ----
+*.log
+*.pot
+*.pyc
+*.sqlite3
+
+# ---- IDE / Editor ----
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ---- Migrations (if using Alembic) ----
+alembic/versions/*.py
+
+# ---- OS Files ----
+.DS_Store
+Thumbs.db
+
+# ---- Testing ----
+.coverage
+htmlcov/
+.pytest_cache/
+
+# ---- Distribution / Packaging ----
+build/
+dist/
+*.egg-info/
+.eggs/
