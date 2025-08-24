@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Isooko Chat</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        margin: 2rem;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        padding: 1rem;
+        min-height: 150px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Isooko Chat</h1>
+
+    <div id="messages"></div>
+    <br />
+    <input
+      id="input"
+      type="text"
+      placeholder="Type a message..."
+      style="width: 80%"
+    />
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+      const clientId = "frontend-client-123"; // unique per user
+      const socket = new WebSocket(`ws://localhost:8000/ws/chat/${clientId}`);
+
+      const messagesDiv = document.getElementById("messages");
+      const input = document.getElementById("input");
+
+      socket.onopen = () => {
+        messagesDiv.innerHTML += "✅ Connected to server\n";
+      };
+
+      socket.onmessage = (event) => {
+        if (event.data === "[[END_OF_MESSAGE]]") {
+          messagesDiv.innerHTML += "\n\n--- End of response ---\n\n";
+        } else {
+          // Append token without breaking line
+          messagesDiv.innerHTML += event.data;
+        }
+      };
+
+      socket.onclose = () => {
+        messagesDiv.innerHTML += "\n❌ Disconnected\n";
+      };
+
+      function sendMessage() {
+        const text = input.value;
+        if (text && socket.readyState === WebSocket.OPEN) {
+          messagesDiv.innerHTML += `\n\n👤 You: ${text}\n🤖 Assistant: `;
+          socket.send(text);
+          input.value = "";
+        }
+      }
+    </script>
+  </body>
+</html>
