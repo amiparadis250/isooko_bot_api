@@ -21,7 +21,7 @@ app = FastAPI(title="Isooko API", version="1.0.0")
 ASSISTANT_API_KEY = os.getenv("Apikey")
 ASSISTANT_ID = os.getenv("assistantId")
 
-# Initialize OpenAI client
+
 client = openai.OpenAI(api_key=ASSISTANT_API_KEY)
 
 
@@ -41,25 +41,27 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint"""
-    logger.info("Health check requested")
+    
     try:
         # Verify assistant exists
         assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
-        logger.debug(f"Assistant verified: {assistant.name}")
+        print(f"Assistant ID: {assistant}")
+       
         
         return HealthResponse(
             status="healthy",
             assistant_id=ASSISTANT_ID,
-            timestamp=time.time()
+            timestamp=time.time(),
+            assistant_name=assistant.name if hasattr(assistant, 'name') else "N/A",
         )
     except Exception as e:
-        logger.error(f"Health check failed: {str(e)}")
+        
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
 @app.post("/chat", response_model=MessageResponse)
 async def chat_with_assistant(request: MessageRequest):
     """Send message to existing OpenAI assistant"""
-    logger.info(f"Received chat request: message='{request.message}'")
+    
     
     debug_info = {
         "request_timestamp": time.time(),
@@ -68,14 +70,10 @@ async def chat_with_assistant(request: MessageRequest):
     }
     
     try:
-        # Create a temporary thread for this single interaction
-        logger.debug("Creating temporary thread for assistant interaction")
+        
         thread = client.beta.threads.create()
         thread_id = thread.id
         debug_info["thread_id"] = thread_id
-        
-        # Add user message to thread
-        logger.debug(f"Adding message to thread {thread_id}")
         client.beta.threads.messages.create(
             thread_id=thread_id,
             role="user",
@@ -93,21 +91,19 @@ async def chat_with_assistant(request: MessageRequest):
         debug_info["run_status"] = run.status
         
         if run.status == 'completed':
-            # Get the assistant's response
+
             messages = client.beta.threads.messages.list(thread_id=thread_id)
             assistant_message = messages.data[0]  # Latest message (assistant's response)
             assistant_response = assistant_message.content[0].text.value
             
             # Clean up - delete the temporary thread
-            logger.debug(f"Cleaning up thread {thread_id}")
+            # logger.debug(f"Cleaning up thread {thread_id}")
             client.beta.threads.delete(thread_id)
             
-            debug_info["response_timestamp"] = time.time()
-            debug_info["total_time"] = debug_info["response_timestamp"] - debug_info["request_timestamp"]
-            debug_info["cleanup_completed"] = True
-            
-            logger.info("Successfully generated response using assistant")
-            logger.debug(f"Response preview: {assistant_response[:100]}...")
+            # debug_info["response_timestamp"] = time.time()
+            # debug_info["total_time"] = debug_info["response_timestamp"] - debug_info["request_timestamp"]
+            # debug_info["cleanup_completed"] = True
+            # logger.debug(f"Response preview: {assistant_response[:100]}...")
             
             return MessageResponse(
                 response=assistant_response,
@@ -120,19 +116,18 @@ async def chat_with_assistant(request: MessageRequest):
             except:
                 pass
             
-            logger.error(f"Assistant run failed with status: {run.status}")
+        
             raise HTTPException(status_code=500, detail=f"Assistant run failed: {run.status}")
         
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
-        debug_info["error"] = str(e)
-        debug_info["error_timestamp"] = time.time()
+        # logger.error(f"Error in chat endpoint: {str(e)}", exc_info=True)
+        # debug_info["error"] = str(e)
+        # debug_info["error_timestamp"] = time.time()
         raise HTTPException(status_code=500, detail=f"Chat error: {str(e)}")
 
 @app.get("/assistant/info")
 async def get_assistant_info():
     """Get information about the configured assistant"""
-    logger.info("Retrieving assistant information")
     
     try:
         assistant = client.beta.assistants.retrieve(ASSISTANT_ID)
@@ -147,7 +142,7 @@ async def get_assistant_info():
         }
         
     except Exception as e:
-        logger.error(f"Error retrieving assistant info: {str(e)}")
+        
         raise HTTPException(status_code=500, detail=f"Error retrieving assistant info: {str(e)}")
 
 @app.get("/")
@@ -166,5 +161,4 @@ async def root():
 # Run the application
 if __name__ == "__main__":
     import uvicorn
-    logger.info("Starting FastAPI server...")
     uvicorn.run(app, host="0.0.0.0", port=8000, log_level="debug")
